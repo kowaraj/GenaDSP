@@ -11,16 +11,16 @@ import getpass
 def log(str):
     if log.file:
         log.file.write(str+'\n')
-log.fullpath = '/Users/kowaraj/usr/src/Gena/TestMaps/DSP/dsp_header_debug_log.c'
-if os.path.isdir(os.path.split(log.fullpath)[0]) != True:
-    print 'dsp_header: no logging'
-    log.file = None
-else:
-    log.file = open(log.fullpath, 'w')
-    log('log file opened on: {0}'.format(datetime.datetime.now()))
-    print 'dsp_header: logging to {0}'.format(log.fullpath)
-
-
+log.fullpath = None
+log.file = None
+def setup_log(ofullpath):
+    log.fullpath = ofullpath
+    if os.path.isdir(os.path.split(log.fullpath)[0]) != True:
+        print 'dsp_header: no logging'
+    else:
+        log.file = open(log.fullpath, 'w')
+        print 'dsp_header: logging ON, file: {0}'.format(log.fullpath)
+        log('log file opened on: {0}'.format(datetime.datetime.now()))
 
 
 
@@ -324,7 +324,6 @@ def print_rec_to_file(rec, file, prefix, parent):
 
 class code_generator(object):
     
-
     class Info(object): pass
     info = Info()
     
@@ -389,6 +388,7 @@ class code_generator(object):
         self.ifilename = filename
         self.ipath = filepath
         self.opath = code_file.append_path(filepath, 'DSP')
+        setup_log(os.path.join(self.opath, 'dsp_header_log.c'))
         self.files = list()
         self._set_info(root)
 
@@ -444,7 +444,6 @@ class code_generator(object):
                 else:
                     log('_parse_root: ch = ({0},{1})'.format(ch.name, ch.type))
                     # log('_parse_root: ch.__dict__ = {0} '.format(ch.__dict__))
-                    print 'parse_child'
                     for f in self.files:
                         print_rec_to_file(ch, f, prefix, root)
 
@@ -455,6 +454,7 @@ class code_generator(object):
             f.close()
 
 
+
 ### ---- dsp_header.py 
 
 class dsp_header(object):
@@ -462,6 +462,7 @@ class dsp_header(object):
     def __init__(self, root, fullpath):
         gen = code_generator(root, fullpath)
         gen._do()
+        self.info = gen.info.GenaDSP
 
         log.file.close()
 
