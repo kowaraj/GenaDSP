@@ -83,7 +83,9 @@ class code_file(object):
         return open(self.ofullpath, 'w')
 
     def close(self):
+        log('dsp_header: writing to the file {0}'.format(self.ofullpath)) 
         self.f.write('\n'.join(self.out))
+        self.f.write('\n')
         self.f.close()
 
     def append(self, text):
@@ -126,12 +128,31 @@ class code_file_mmh(code_file):
 ### ---- cheb_data.py 
 
 class cheb_data(object):
+
+    def _gen_bfd_sr_mmh(self):
+        l = []
+        l.extend([
+                '#define {0:30} ({1}) // {2}'.format(self.name, self.bmask, self.type)
+                ])
+        return l
     
     def _gen_bfd_sr_vmeh(self):
-        return ['// Not implemented yet: no {0} accessors'.format(self.type)]
+        l = []
+        l.extend([
+                self.ctype + ' get_' + self.name + '(void);'
+                ])
+!! check for writablility!
+        l.extend([
+!!! add a setter !!!
+                ])
+
+
+        return l
 
     def _gen_bfd_sr_vmec(self):
         l = []
+
+        #getter
         l.extend([
                 self.ctype + ' get_' + self.name + '() {',
                 '\t' + self.ctype + '* preg = (' + self.ctype + '*)' + self.name + ';',
@@ -141,7 +162,8 @@ class cheb_data(object):
                 '\treturn bval;',
                 '}'
                 ])
-        
+!! check for writablility!        
+        # setter
         l.extend([
                 'void set_' + self.name + '(' + self.ctype + ' bval) {',
                 '\t' + self.ctype + '* preg = (' + self.ctype + '*)' + self.name + ';',
@@ -216,7 +238,7 @@ class sub_reg(cheb_data):
         self.bmask = '0x{0:0>8X}'.format( ((1 << (b_msb-b_lsb+1))-1) << b_lsb) 
 
     def gen_mmh(self):
-        return ['#define {0:30} ({1}) // {2}'.format(self.name, self.bitmask, self.type)]
+        return self._gen_bfd_sr_mmh()
 
     def gen_vmec(self):
         return self._gen_bfd_sr_vmec()
@@ -237,7 +259,7 @@ class bit_field_data(cheb_data):
         self.b_lsb = self.bit
                         
     def gen_mmh(self):
-        return ['#define {0:30} ({1}) // {2}'.format(self.name, self.bmask, self.type)]
+        return self._gen_bfd_sr_mmh()
 
     def gen_vmec(self):
         return self._gen_bfd_sr_vmec()
@@ -257,10 +279,12 @@ class code_field(object):
         return ['#define {0:30} {1} // {2}'.format(self.name, self.el.code, self.type)]
 
     def gen_vmeh(self):
-        return ['// Not implemented yet: no {0} accessors'.format(self.type)]
+        return ['// Not implemented yet: no {0} getter'.format(self.type)]
+        return ['// Not implemented yet: no {0} setter'.format(self.type)]
     
     def gen_vmec(self):
-        return ['// Not implemented yet: no {0} accessors'.format(self.type)]
+        return ['// Not implemented yet: no {0} getter'.format(self.type)]
+        return ['// Not implemented yet: no {0} setter'.format(self.type)]
 
 @mm("register-data", code_file_vmeh)
 def print_rec_to_file(rec, file, prefix, parent):
@@ -376,6 +400,8 @@ class code_generator(object):
                 ])
         l.extend(h_common)
         l.extend([
+                '',
+                '#include "include\MemMapDSP_{0}.h"'.format(self.projname),
                 ''
                 ])
         return l
@@ -465,6 +491,6 @@ class dsp_header(object):
         self.info = gen.info.GenaDSP
 
         log.file.close()
-
+        
 
 #EOF
