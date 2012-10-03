@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?><?xml-stylesheet type="text/xsl" href="http://abwww.cern.ch/ap/dist/accsoft/rf/accsoft-rf-cheburashka/PRO/src/refactor/cern/accsoft/rf/cheburashka/xml/schema/MemMapStyleSheet.xsl"?><memory-map xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" area-depth="1M" description="DSP memory map for the SPS Frequency Program VME" gen="dsp" ident-code="0xc1" map-version="20120718" mem-map-access-mode="A32/D32" name="spsFreqProgDSP" note="201207080948" vme-base-addr="0x00000" xsi:schemaLocation="http://abwww.cern.ch/ap/dist/accsoft/rf/accsoft-rf-cheburashka/PRO/src/refactor/cern/accsoft/rf/cheburashka/xml/schema/TemplateMemMap.xsd">
+  <register-data access-mode="rw" address="next" bit-encoding="unsigned" comment="" conversion-factor="" description="DSP code version" element-width="32" fesa-persistent="true" name="dspVersion" note="x" ppm="true"/>
+  <register-data access-mode="rw" address="next" bit-encoding="unsigned" description="subversion" element-width="32" fesa-persistent="true" name="dspSubVersion" note="default value" ppm="true"/>
+  <register-data access-mode="rw" address="next" bit-encoding="unsigned" comment="" description="DSP status reg" element-width="32" fesa-persistent="true" name="dspStatus" note="default value" ppm="true">
+    <bit-field-data bit="7" comment="" description="1 = DSP is busy, 0 = DSP went idle (ready)" name="dspRun"/>
+    <bit-field-data bit="6" comment="" description="1 = DSP finished the task, 0 = DSP went idle" name="dspDone"/>
+    <sub-reg description="the last task completed" name="rephMode" range="3-0">
+      <code-field code="0" comment="" name="idle"/>
+      <code-field code="1" comment="" name="fbottom"/>
+      <code-field code="2" comment="" name="ramp"/>
+      <code-field code="3" comment="" name="ftop"/>
+      <code-field code="4" comment="" name="setfreq"/>
+      <code-field code="5" comment="" name="coarse"/>
+      <code-field code="6" comment="" name="pll"/>
+      <code-field code="7" comment="" name="spare1"/>
+    </sub-reg>
+  </register-data>
+  <register-data access-mode="rw" address="next" bit-encoding="unsigned" description="DSP Faults" element-width="32" fesa-persistent="true" gen="no-split" name="dspFaults" note="default value" ppm="true">
+    <bit-field-data bit="7" name="spare"/>
+  </register-data>
+  <register-data access-mode="r" address="next" bit-encoding="unsigned" comment="" description="Control 2" element-width="32" fesa-persistent="true" name="control2" note="default value" ppm="true">
+    <bit-field-data bit="2" comment="" description="1 = Record enabled" name="enaRecord"/>
+    <bit-field-data bit="1" comment="" description="1 = Playback enabled" name="enaPlayback"/>
+    <bit-field-data bit="0" comment="" description="1 = RadialSteering enabled" name="enaRadialSteering"/>
+  </register-data>
+  <register-data access-mode="r" address="next" bit-encoding="unsigned" comment="" description="control 3 (DSP)" element-width="32" fesa-persistent="true" name="control3" note="default value" ppm="true">
+    <bit-field-data bit="7" comment="" description="1 = There is a incomplete task for the DSP" name="dspTask"/>
+    <sub-reg description="rephasing modes enum" name="rephMode" range="3-0">
+      <code-field code="0" comment="" name="idle"/>
+      <code-field code="1" comment="" name="fbottom"/>
+      <code-field code="2" comment="" name="ramp"/>
+      <code-field code="3" comment="" name="ftop"/>
+      <code-field code="4" comment="" name="setfreq"/>
+      <code-field code="5" comment="" name="coarse"/>
+      <code-field code="6" comment="" name="pll"/>
+      <code-field code="8" comment="" name="spare1"/>
+    </sub-reg>
+  </register-data>
+  <register-data access-mode="r" address="next" bit-encoding="float" comment="" description="rephasing data: setFrequency value, coarseReph dT... " element-width="32" fesa-persistent="true" name="rephDataIn" note="default value" ppm="true"/>
+  <register-data access-mode="r" address="next" bit-encoding="float" comment="" description="magnetic field value at injection" element-width="32" fesa-persistent="true" name="rephParamB0" note="default value" ppm="true"/>
+  <register-data access-mode="r" address="next" bit-encoding="float" comment="" description="mass over charge ratio" element-width="32" fesa-persistent="true" name="rephParamMq" note="default value" ppm="true"/>
+  <register-data access-mode="r" address="next" bit-encoding="float" comment="" description="gamma transition" element-width="32" fesa-persistent="true" name="rephParamGTrans" note="default value" ppm="true"/>
+  <register-data access-mode="r" address="next" bit-encoding="float" comment="" description="max slope for the cubic curve of the frequency change [float]" element-width="32" fesa-persistent="true" name="rephConstMaxSlope" note="default value" ppm="true"/>
+  <register-data access-mode="r" address="next" bit-encoding="float" comment="" description="SPS equivalent radius [float]" element-width="32" fesa-persistent="true" name="rephConstSPSRad" note="default value" ppm="true"/>
+  <register-data access-mode="r" address="next" bit-encoding="unsigned" comment="" description="F speed of light at the center orbit, SPS = h*c/(2piR) [int32]" element-width="32" fesa-persistent="true" name="rephConstFInf" note="default value" ppm="true"/>
+  <register-data access-mode="r" address="next" bit-encoding="unsigned" comment="" description="b+/- pulses counter [int32]" element-width="32" fesa-persistent="true" name="udCounter" note="default value" ppm="true"/>
+  <register-data access-mode="r" address="next" bit-encoding="unsigned" comment="" description="serial link input: Radial steering data" element-width="32" fesa-persistent="true" name="radialSteering" note="default value" ppm="true"/>
+  <register-data access-mode="w" address="next" bit-encoding="unsigned" comment="" description="serial link output: Coarse frequency programm" element-width="32" fesa-persistent="true" name="coarseFP" note="default value" ppm="true"/>
+  <register-data access-mode="w" address="next" bit-encoding="unsigned" comment="" description="DDS' FTW calculated from the current b field and radial steering" element-width="32" fesa-persistent="true" name="ddsFTW1" note="default value" ppm="true"/>
+  <register-data access-mode="rw" address="next" bit-encoding="unsigned" comment="" description="DDS' FTW for the FSK, calculated from at the end of Bgate" element-width="32" fesa-persistent="true" name="ddsFTW2" note="default value" ppm="true"/>
+  <register-data access-mode="rw" address="next" bit-encoding="unsigned" comment="" description="dbg" element-width="32" fesa-persistent="true" name="dbgIrq0Cnt" note="default value" ppm="true"/>
+  <register-data access-mode="rw" address="next" bit-encoding="unsigned" comment="" description="dbg" element-width="32" fesa-persistent="true" name="dbgIrq1Cnt" note="default value" ppm="true"/>
+</memory-map>
