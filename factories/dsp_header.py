@@ -138,20 +138,25 @@ class cheb_data(object):
     
     def _gen_bfd_sr_vmeh(self):
         l = []
+        #getter
         l.extend([
                 self.ctype + ' get_' + self.name + '(void);'
                 ])
-!! check for writablility!
-        l.extend([
-!!! add a setter !!!
-                ])
-
-
+        #setter
+        if self._writable():
+            l.extend([
+                    'void set_' + self.name + '(' + self.ctype + ' val);'
+                    ])
+        else:
+            #read-only
+            l.extend([
+                    '// read-only: {0}'.format(self.name)
+                    ])
+        l.extend([''])
         return l
 
     def _gen_bfd_sr_vmec(self):
         l = []
-
         #getter
         l.extend([
                 self.ctype + ' get_' + self.name + '() {',
@@ -162,23 +167,30 @@ class cheb_data(object):
                 '\treturn bval;',
                 '}'
                 ])
-!! check for writablility!        
         # setter
-        l.extend([
-                'void set_' + self.name + '(' + self.ctype + ' bval) {',
-                '\t' + self.ctype + '* preg = (' + self.ctype + '*)' + self.name + ';',
-                '\t' + self.ctype + ' oldval = *preg;',
-                '\tunsigned int bmask = ' + self.bmask + ';',
-                '\tunsigned int b_lsb = ' + '{0:d}'.format(self.b_lsb) + ';',
-                '\t' + self.ctype + ' newval = (oldval & ~bmask) | (bval << b_lsb);',
-                '\t*preg = newval;',
-                '}'
-                ])
-
+        if self._writable():
+            l.extend([
+                    'void set_' + self.name + '(' + self.ctype + ' bval) {',
+                    '\t' + self.ctype + '* preg = (' + self.ctype + '*)' + self.name + ';',
+                    '\t' + self.ctype + ' oldval = *preg;',
+                    '\tunsigned int bmask = ' + self.bmask + ';',
+                    '\tunsigned int b_lsb = ' + '{0:d}'.format(self.b_lsb) + ';',
+                    '\t' + self.ctype + ' newval = (oldval & ~bmask) | (bval << b_lsb);',
+                    '\t*preg = newval;',
+                    '}'
+                    ])
+        else:
+            #read-only
+            l.extend([
+                    '// read-only: {0}'.format(self.name)
+                    ])
+        l.extend([''])
         return l
-        
-        
-class register_data(object):
+    
+    def _writable(self):
+        return self.mode == 'rw' or self.mode == 'w'
+    
+class register_data(cheb_data):
 
     known_types = dict([(('float', 32), 'float'), (('float', 64), 'double'), (('unsigned', 16), 'unsigned short'), (('unsigned', 32), 'unsigned int'), (('signed', 16), 'short'), (('signed', 32), 'int')])
 
@@ -197,9 +209,21 @@ class register_data(object):
     def gen_vmeh(self):
         log('gen_vmeh')
         l = []
-        l.extend([self.ctype + ' get_' + self.name + '(void);'])
-        if self.mode == 'rw' or self.mode == 'w':
-            l.extend(['void set_' + self.name + '(' + self.ctype + ' val);'])
+        #getter
+        l.extend([
+                self.ctype + ' get_' + self.name + '(void);'
+                ])
+        #setter
+        if self._writable():
+            l.extend([
+                    'void set_' + self.name + '(' + self.ctype + ' val);'
+                    ])
+        else:
+            #read-only
+            l.extend([
+                    '// read-only: {0}'.format(self.name)
+                    ])
+        l.extend([''])
         return l
 
     def gen_vmec(self):
@@ -212,13 +236,19 @@ class register_data(object):
                 '}'
                 ])
         # setter
-        if self.mode == 'rw' or self.mode == 'w':
+        if self._writable():
             l.extend([
                     'void set_' + self.name + '(' + self.ctype + ' val) {',
                     '\t' + self.ctype + '* preg = (' + self.ctype + '*)' + self.name + ';',
                     '\t' + '*preg = val;',
                     '}'
                     ])
+        else:
+            #read-only
+            l.extend([
+                    '// read-only: {0}'.format(self.name)
+                    ])
+        l.extend([''])
         return l
 
 class sub_reg(cheb_data):
@@ -230,12 +260,12 @@ class sub_reg(cheb_data):
         self.mode = ch.access_mode
         self.ctype = ctype
 
-        self.b_lsb = b._attr['lsb']
-        self.b_msb = b._attr['msb']
+        self.b_lsb = ch.lsb
+        self.b_msb = ch.msb
 
-        if b_lsb == None:
+        if self.b_lsb == None:
             raise RuntimeError, 'b_lsb of a sub-reg could be None'
-        self.bmask = '0x{0:0>8X}'.format( ((1 << (b_msb-b_lsb+1))-1) << b_lsb) 
+        self.bmask = '0x{0:0>8X}'.format( ((1 << (self.b_msb-self.b_lsb+1))-1) << self.b_lsb) 
 
     def gen_mmh(self):
         return self._gen_bfd_sr_mmh()
@@ -267,7 +297,7 @@ class bit_field_data(cheb_data):
     def gen_vmeh(self):
         return self._gen_bfd_sr_vmeh()
 
-class code_field(object):
+class code_field(cheb_data):
 
     def __init__(self, ch, prefix):
         self.el = ch
@@ -462,8 +492,16 @@ class code_generator(object):
 
         for ch in sorted(root._children, key=sort_key):
             if len(ch) > 0:
-                log('_parse_root: recur({0})... '.format(prefix + ch.name + '_'))
-                self._parse_root(ch, prefix + ch.name + '_')
+                new_prefix = prefix + ch.name + '_'
+                log('_parse_root: -------------> {0}... '.format(new_prefix))
+                if ch.type == 'area':
+                    log('_parse_root: no records for areas')
+                else:
+                    for f in self.files:
+                        log('# "{0}"({1}), {2}, {3}, "{4}"({5})'.format(ch.name, ch.type, f.filename, prefix, root.name, root.type))
+                        print_rec_to_file(ch, f, prefix, root)
+                self._parse_root(ch, new_prefix)
+                log('_parse_root:--')
             else:
                 if ch.type == 'area':
                     log('_parse_root: empty area found')
