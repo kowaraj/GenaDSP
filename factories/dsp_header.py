@@ -199,10 +199,15 @@ class register_data(cheb_data):
         self.name = prefix+ch.name
         self.type = ch.type
         self.mode = ch.access_mode
-        self.addr = ch.address
+        self.addr = ch.address/(dsp_header.data_size/8) + dsp_header.dsp_base_addr
         ctype = self.known_types[(self.el.bit_encoding, self.el.element_width)]
         self.ctype = ctype
         
+        
+    def __reg_address(self):
+        
+        return addr
+    
     def gen_mmh(self):
         return ['#define {0:30} (0x{1:0>8X})// {4}, {2:3}, {3}'.format(self.name, self.addr, self.mode, self.ctype, self.type)]
 
@@ -447,6 +452,7 @@ class code_generator(object):
         setup_log(os.path.join(self.opath, 'dsp_header_log.c'))
         self.files = list()
         self._set_info(root)
+        self.data_size = root.data_size
 
         # make the list of files
         vme_acc_h = code_file_vmeh(self.opath, self.projname)
@@ -470,27 +476,28 @@ class code_generator(object):
     def add_file(self, file):
         self.files.append(file)
 
+    @staticmethod
+    def __sort_key(x):
+        # print '__ x.name = ', x.name, ', x.type = ', x.type
+        # print '__ x = ', x.__dict__
+        if x._attr.has_key('address'):
+            return x._attr['address']
+        elif x._attr.has_key('bit'):
+            return x._attr['bit']
+        elif x._attr.has_key('range'):
+            return x._attr['range']
+        elif x._attr.has_key('code'):
+            return x._attr['code']
+        else:
+            raise RuntimeError, "sorting key not found"
+
     def _parse_root(self, root, prefix=''):
         # print '___ root.type = ', root.type
         # print '___ root.__dict__ = ', root.__dict__
         # print '___ ch.__dict__ = ', root._children[0].__dict__
         # print '___ root.name = ', root.name, ', root.type = ', root.type
-        
-        def sort_key(x):
-            # print '__ x.name = ', x.name, ', x.type = ', x.type
-            # print '__ x = ', x.__dict__
-            if x._attr.has_key('address'):
-                return x._attr['address']
-            elif x._attr.has_key('bit'):
-                return x._attr['bit']
-            elif x._attr.has_key('range'):
-                return x._attr['range']
-            elif x._attr.has_key('code'):
-                return x._attr['code']
-            else:
-                raise RuntimeError, "sorting key not found"
 
-        for ch in sorted(root._children, key=sort_key):
+        for ch in sorted(root._children, key=code_generator.__sort_key):
             if len(ch) > 0:
                 new_prefix = prefix + ch.name + '_'
                 log('_parse_root: -------------> {0}... '.format(new_prefix))
@@ -523,12 +530,19 @@ class code_generator(object):
 
 class dsp_header(object):
     
+    data_size = 'not defined'
+    dsp_base_addr = 'not defined'        
+    
     def __init__(self, root, fullpath):
         gen = code_generator(root, fullpath)
+        #FIXME: Find a proper way to have these data available at reg-data.mmh, bfd.mmh,..
+        dsp_header.data_size = root.data_size
+        #FIXME: Find a proper way to have these data available at reg-data.mmh, bfd.mmh,..
+        dsp_header.dsp_base_addr = 0x2000000
         gen._do()
         self.info = gen.info.GenaDSP
 
         log.file.close()
-        
+
 
 #EOF
