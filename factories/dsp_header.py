@@ -93,6 +93,8 @@ class code_file(object):
         self.out.extend(lines)
 
     def extend(self, lines):
+        for l in lines:
+            log(':: ' + l)
         self.out.extend(lines)
 
 class code_file_vmeh(code_file):
@@ -188,7 +190,7 @@ class cheb_data(object):
         return l
     
     def _writable(self):
-        return self.mode == 'rw' or self.mode == 'w'
+        return not ( self.mode == 'r' )
     
 class register_data(cheb_data):
 
@@ -212,7 +214,6 @@ class register_data(cheb_data):
         return ['#define {0:30} (0x{1:0>8X})// {4}, {2:3}, {3}'.format(self.name, self.addr, self.mode, self.ctype, self.type)]
 
     def gen_vmeh(self):
-        log('gen_vmeh')
         l = []
         #getter
         l.extend([
@@ -229,6 +230,7 @@ class register_data(cheb_data):
                     '// read-only: {0}'.format(self.name)
                     ])
         l.extend([''])
+        #log(l.__str__())
         return l
 
     def gen_vmec(self):
@@ -505,7 +507,7 @@ class code_generator(object):
                     log('_parse_root: no records for areas')
                 else:
                     for f in self.files:
-                        log('# "{0}"({1}), {2}, {3}, "{4}"({5})'.format(ch.name, ch.type, f.filename, prefix, root.name, root.type))
+                        log('## "{4}"({5}) "{3}{0}"({1}) -> "{2}"'.format(ch.name, ch.type, f.filename, prefix, root.name, root.type))
                         print_rec_to_file(ch, f, prefix, root)
                 self._parse_root(ch, new_prefix)
                 log('_parse_root:--')
@@ -516,6 +518,7 @@ class code_generator(object):
                     log('_parse_root: ch = ({0},{1})'.format(ch.name, ch.type))
                     # log('_parse_root: ch.__dict__ = {0} '.format(ch.__dict__))
                     for f in self.files:
+                        log('## "{4}"({5}) "{3}{0}"({1}) -> "{2}"'.format(ch.name, ch.type, f.filename, prefix, root.name, root.type))
                         print_rec_to_file(ch, f, prefix, root)
 
     def _do(self):
