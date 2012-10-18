@@ -195,7 +195,7 @@ class cheb_data(object):
         if self.mode == None:
             raise RuntimeError, "@_writable: no 'mode' attribute found!"
         writable = self.mode in dsp_header.DspWritableElements
-        log('mode = ' + str(self.mode))
+        #log('mode = ' + str(self.mode))
         return writable 
 
     
