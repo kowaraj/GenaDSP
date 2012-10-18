@@ -192,10 +192,10 @@ class cheb_data(object):
     def _writable(self):
         #writable DSP registers: wr, w
         #read-only DSP registers: rmw, r
-        #if self.mode == None:
-        #    raise RuntimeError, "@_writable: no 'mode' attribute found!"
+        if self.mode == None:
+            raise RuntimeError, "@_writable: no 'mode' attribute found!"
         writable = self.mode in dsp_header.DspWritableElements
-        #log('mode = ' + str(self.mode))
+        log('mode = ' + str(self.mode))
         return writable 
 
     
@@ -212,11 +212,6 @@ class register_data(cheb_data):
         ctype = self.known_types[(self.el.bit_encoding, self.el.element_width)]
         self.ctype = ctype
         
-        
-    def __reg_address(self):
-        
-        return addr
-    
     def gen_mmh(self):
         return ['#define {0:30} (0x{1:0>8X})// {4}, {2:3}, {3}'.format(self.name, self.addr, self.mode, self.ctype, self.type)]
 
@@ -267,12 +262,15 @@ class register_data(cheb_data):
 
 class sub_reg(cheb_data):
 
-    def __init__(self, ch, prefix, ctype):
+    def __init__(self, ch, prefix, parent):
         self.el = ch
         self.name = prefix+ch.name
         self.type = ch.type
-        self.mode = ch.access_mode
-        self.ctype = ctype
+        if ch.access_mode == None:
+            self.mode = parent.access_mode
+        else:
+            self.mode = ch.access_mode
+        self.ctype = 'unsigned int'
 
         self.b_lsb = ch.lsb
         self.b_msb = ch.msb
@@ -292,14 +290,17 @@ class sub_reg(cheb_data):
 
 class bit_field_data(cheb_data):
 
-    def __init__(self, ch, prefix, ctype):
+    def __init__(self, ch, prefix, parent):
         self.el = ch
         self.name = prefix+ch.name
         self.type = ch.type
-        self.mode = ch.access_mode
+        if ch.access_mode == None:
+            self.mode = parent.access_mode
+        else:
+            self.mode = ch.access_mode
         self.bit = ch.bit
         self.bmask = '0x{0:0>8X}'.format(1<< ch.bit)
-        self.ctype = ctype
+        self.ctype = 'unsigned int'
         self.b_lsb = self.bit
                         
     def gen_mmh(self):
@@ -344,33 +345,27 @@ def print_rec_to_file(rec, file, prefix, parent):
 
 @mm("bit-field-data", code_file_vmeh)
 def print_rec_to_file(rec, file, prefix, parent):
-    ctype = register_data(parent).ctype
-    file.extend(bit_field_data(rec, prefix, ctype).gen_vmeh())
+    file.extend(bit_field_data(rec, prefix, parent).gen_vmeh())
 
 @mm("bit-field-data", code_file_vmec)
 def print_rec_to_file(rec, file, prefix, parent):
-    ctype = register_data(parent).ctype
-    file.extend(bit_field_data(rec, prefix, ctype).gen_vmec())
+    file.extend(bit_field_data(rec, prefix, parent).gen_vmec())
 
 @mm("bit-field-data", code_file_mmh)
 def print_rec_to_file(rec, file, prefix, parent):
-    ctype = register_data(parent).ctype
-    file.extend(bit_field_data(rec, prefix, ctype).gen_mmh())
+    file.extend(bit_field_data(rec, prefix, parent).gen_mmh())
 
 @mm("sub-reg", code_file_mmh)
 def print_rec_to_file(rec, file, prefix, parent):
-    ctype = register_data(parent).ctype
-    file.extend(sub_reg(rec, prefix, ctype).gen_mmh())
+    file.extend(sub_reg(rec, prefix, parent).gen_mmh())
 
 @mm("sub-reg", code_file_vmec)
 def print_rec_to_file(rec, file, prefix, parent):
-    ctype = register_data(parent).ctype
-    file.extend(sub_reg(rec, prefix, ctype).gen_vmec())
+    file.extend(sub_reg(rec, prefix, parent).gen_vmec())
 
 @mm("sub-reg", code_file_vmeh)
 def print_rec_to_file(rec, file, prefix, parent):
-    ctype = register_data(parent).ctype
-    file.extend(sub_reg(rec, prefix, ctype).gen_vmeh())
+    file.extend(sub_reg(rec, prefix, parent).gen_vmeh())
 
 @mm("code-field", code_file_mmh)
 def print_rec_to_file(rec, file, prefix, parent):
@@ -544,7 +539,7 @@ class dsp_header(object):
     
     data_size = 'not defined'
     dsp_base_addr = 'not defined'        
-    DspWritableElements = ['wr', 'w']
+    DspWritableElements = ['rw', 'w']
     
     def __init__(self, root, fullpath):
         gen = code_generator(root, fullpath)
