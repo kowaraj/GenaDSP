@@ -190,7 +190,14 @@ class cheb_data(object):
         return l
     
     def _writable(self):
-        return not ( self.mode == 'r' )
+        #writable DSP registers: wr, w
+        #read-only DSP registers: rmw, r
+        #if self.mode == None:
+        #    raise RuntimeError, "@_writable: no 'mode' attribute found!"
+        writable = self.mode in dsp_header.DspWritableElements
+        #log('mode = ' + str(self.mode))
+        return writable 
+
     
 class register_data(cheb_data):
 
@@ -456,6 +463,8 @@ class code_generator(object):
         self._set_info(root)
         self.data_size = root.data_size
 
+        log("NB: writable: attr['mode'] must be in: " + str(dsp_header.DspWritableElements))
+
         # make the list of files
         vme_acc_h = code_file_vmeh(self.opath, self.projname)
         self.add_file(vme_acc_h)
@@ -535,6 +544,7 @@ class dsp_header(object):
     
     data_size = 'not defined'
     dsp_base_addr = 'not defined'        
+    DspWritableElements = ['wr', 'w']
     
     def __init__(self, root, fullpath):
         gen = code_generator(root, fullpath)
