@@ -1,0 +1,20 @@
+Date:   Thu Oct 18 16:11:52 2012 +0200
+
+    mods: ch.access_mode = parent.access_mode if None
+
+Date:   Thu Oct 18 15:59:52 2012 +0200
+
+    mods: ctype for sub-reg & bit-field-data are hardcoded as 'unsigned int' now
+
+Date:   Thu Oct 18 14:39:40 2012 +0200
+
+    bugfix: writability detection for elements without 'mode' attribut
+
+Date:   Thu Oct 18 13:39:36 2012 +0200
+
+    bugfix: dsp_header: wrong detection of read-only
+
+Date:   Fri Oct 5 17:11:48 2012 +0200
+
+    bugfix: mm.h generation: reg-data address missed the dsp_base_addr and division by 4
+
