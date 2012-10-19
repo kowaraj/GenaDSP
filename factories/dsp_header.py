@@ -163,9 +163,9 @@ class cheb_data(object):
         l.extend([
                 self.ctype + ' get_' + self.name + '() {',
                 '\t' + self.ctype + '* preg = (' + self.ctype + '*)' + self.parent.name + ';',
-                '\tunsigned int bmask = ' + self.bmask + ';',
+#                '\tunsigned int bmask = ' + self.bmask + ';',
                 '\tunsigned int b_lsb = ' + '{0:d}'.format(self.b_lsb) + ';',
-                '\t' + self.ctype + ' bval = ( (*preg & bmask) >> b_lsb );',
+                '\t' + self.ctype + ' bval = ( (*preg & '+ self.name +') >> b_lsb );',
                 '\treturn bval;',
                 '}'
                 ])
@@ -175,9 +175,8 @@ class cheb_data(object):
                     'void set_' + self.name + '(' + self.ctype + ' bval) {',
                     '\t' + self.ctype + '* preg = (' + self.ctype + '*)' + self.parent.name + ';',
                     '\t' + self.ctype + ' oldval = *preg;',
-                    '\tunsigned int bmask = ' + self.bmask + ';',
                     '\tunsigned int b_lsb = ' + '{0:d}'.format(self.b_lsb) + ';',
-                    '\t' + self.ctype + ' newval = (oldval & ~bmask) | (bval << b_lsb);',
+                    '\t' + self.ctype + ' newval = (oldval & ~'+ self.name +') | (bval << b_lsb);',
                     '\t*preg = newval;',
                     '}'
                     ])
