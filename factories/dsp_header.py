@@ -8,9 +8,20 @@ import getpass
 
 ### ---- log2file.py
 
-def log(str):
+def log(str, lvl = 0):
+    if lvl > log.dbglvl:
+        return 
     if log.file:
         log.file.write(str+'\n')
+
+log.DBGLVL_RELEASE = 1
+log.DBGLVL_RC = 2 #same as RELEASE + 'src' in the log
+log.DBGLVL_DEBUG = 3
+log.DBGLVL_TALK = 5
+#log.dbglvl = log.DBGLVL_TALK
+#log.dbglvl = log.DBGLVL_DEBUG
+log.dbglvl = log.DBGLVL_RELEASE
+
 log.fullpath = None
 log.file = None
 def setup_log(ofullpath):
@@ -94,7 +105,7 @@ class code_file(object):
 
     def extend(self, lines):
         for l in lines:
-            log(':: ' + l)
+            log(':: ' + l, 1)
         self.out.extend(lines)
 
 class code_file_vmeh(code_file):
@@ -200,15 +211,34 @@ class cheb_data(object):
     
 class register_data(cheb_data):
 
+    DEFAULT_BIT_ENC = 'unsigned'
     known_types = dict([(('float', 32), 'float'), (('float', 64), 'double'), (('unsigned', 16), 'unsigned short'), (('unsigned', 32), 'unsigned int'), (('signed', 16), 'short'), (('signed', 32), 'int')])
 
     def __init__(self, ch, prefix=''):
+        log('register_data.__init__:',4)
+        log('ch: ' + str(ch.__dict__),5)
         self.el = ch
         self.name = prefix+ch.name
         self.type = ch.type
         self.mode = ch.access_mode
+        log('dsp_base_addr = (0x{0:0>8X})'.format(dsp_header.dsp_base_addr), 4)
         self.addr = ch.address/(dsp_header.data_size/8) + dsp_header.dsp_base_addr
-        ctype = self.known_types[(self.el.bit_encoding, self.el.element_width)]
+        log('self.addr = (0x{0:0>8X})'.format(self.addr), 4)
+        if self.el.bit_encoding == None:
+            self.el.bit_encoding = self.DEFAULT_BIT_ENC
+            log('WARNING: bit_encoding not specified, by default: '+self.DEFAULT_BIT_ENC)
+  
+        try:
+            ctype = self.known_types[(self.el.bit_encoding, self.el.element_width)]
+        except KeyError:
+            msg = 'Exception KeyError: unknown c-type: bit_encoding = ' + str(self.el.bit_encoding) + ', el_width = ' + str(self.el.element_width)
+            raise RuntimeError, msg 
+        except Exception:
+            msg = 'EXCEPTION: unknown, bit_encoding = ' + str(self.el.bit_encoding) + ', el_width = ' + str(self.el.element_width)
+            log(msg)
+            raise RuntimeError, 'Exception: unknown, register_data.__init__'
+
+        log('self.ctype = ' + ctype, 4)
         self.ctype = ctype
         
     def gen_mmh(self):
@@ -449,7 +479,7 @@ class code_generator(object):
         return l
         
     def __init__(self, root, fullpath):
-
+        log('code_gen.__init__', 3)
         self.root = root
         self.projname = root.name
         filepath, filename = os.path.split(fullpath)
@@ -501,10 +531,10 @@ class code_generator(object):
             raise RuntimeError, "sorting key not found"
 
     def _parse_root(self, root, prefix=''):
-        # print '___ root.type = ', root.type
-        # print '___ root.__dict__ = ', root.__dict__
-        # print '___ ch.__dict__ = ', root._children[0].__dict__
-        # print '___ root.name = ', root.name, ', root.type = ', root.type
+        log('___ root.type = ' + root.type, 4)
+        log('___ root.__dict__ = ' + str(root.__dict__), 4)
+        log('___ ch.__dict__ = ' + str(root._children[0].__dict__), 4)
+        log('___ root.name = ' + root.name + ', root.type = ' + root.type, 4)
 
         for ch in sorted(root._children, key=code_generator.__sort_key):
             if len(ch) > 0:
@@ -545,6 +575,10 @@ class dsp_header(object):
     DspWritableElements = ['rw', 'w']
     
     def __init__(self, root, fullpath):
+        print "hi"
+        print root
+        print dir(root)
+        print fullpath
         gen = code_generator(root, fullpath)
         #FIXME: Find a proper way to have these data available at reg-data.mmh, bfd.mmh,..
         dsp_header.data_size = root.data_size
