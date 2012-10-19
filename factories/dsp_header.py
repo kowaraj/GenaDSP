@@ -162,7 +162,7 @@ class cheb_data(object):
         #getter
         l.extend([
                 self.ctype + ' get_' + self.name + '() {',
-                '\t' + self.ctype + '* preg = (' + self.ctype + '*)' + self.name + ';',
+                '\t' + self.ctype + '* preg = (' + self.ctype + '*)' + self.parent.name + ';',
                 '\tunsigned int bmask = ' + self.bmask + ';',
                 '\tunsigned int b_lsb = ' + '{0:d}'.format(self.b_lsb) + ';',
                 '\t' + self.ctype + ' bval = ( (*preg & bmask) >> b_lsb );',
@@ -173,7 +173,7 @@ class cheb_data(object):
         if self._writable():
             l.extend([
                     'void set_' + self.name + '(' + self.ctype + ' bval) {',
-                    '\t' + self.ctype + '* preg = (' + self.ctype + '*)' + self.name + ';',
+                    '\t' + self.ctype + '* preg = (' + self.ctype + '*)' + self.parent.name + ';',
                     '\t' + self.ctype + ' oldval = *preg;',
                     '\tunsigned int bmask = ' + self.bmask + ';',
                     '\tunsigned int b_lsb = ' + '{0:d}'.format(self.b_lsb) + ';',
@@ -264,6 +264,8 @@ class sub_reg(cheb_data):
 
     def __init__(self, ch, prefix, parent):
         self.el = ch
+        self.parent = parent
+        log('parent name = ' + str(parent.name))
         self.name = prefix+ch.name
         self.type = ch.type
         if ch.access_mode == None:
@@ -292,6 +294,8 @@ class bit_field_data(cheb_data):
 
     def __init__(self, ch, prefix, parent):
         self.el = ch
+        self.parent = parent
+        log('parent name = ' + str(parent.name))
         self.name = prefix+ch.name
         self.type = ch.type
         if ch.access_mode == None:
