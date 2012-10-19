@@ -294,7 +294,7 @@ class bit_field_data(cheb_data):
     def __init__(self, ch, prefix, parent):
         self.el = ch
         self.parent = parent
-        log('parent name = ' + str(parent.name))
+        #log('parent name = ' + str(parent.name))
         self.name = prefix+ch.name
         self.type = ch.type
         if ch.access_mode == None:
