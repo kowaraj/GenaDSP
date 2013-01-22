@@ -55,7 +55,7 @@ def mm(type1, type2):
                 # print 'decorated_f: mm.cache = ', mm.cache
 
                 if types_tuple not in mm.cache:
-                    raise RuntimeError, 'mm: unknown tuple: {0}'.format(types_tuple)
+                    raise RuntimeError, 'multimethod: unknown tuple: {0}'.format(types_tuple)
                 
                 f_ret = mm.cache[types_tuple]
                 # print 'decorated_f: f_ret = ', f_ret
@@ -145,7 +145,7 @@ class cheb_data(object):
     def _gen_bfd_sr_mmh(self):
         l = []
         l.extend([
-                '#define {0:30} ({1}) // {2}'.format(self.name, self.bmask, self.type)
+                '#define {0:50} ({1}) // {2}'.format(self.name, self.bmask, self.type)
                 ])
         return l
     
@@ -212,7 +212,15 @@ class cheb_data(object):
 class register_data(cheb_data):
 
     DEFAULT_BIT_ENC = 'unsigned'
-    known_types = dict([(('float', 32), 'float'), (('float', 64), 'double'), (('unsigned', 16), 'unsigned short'), (('unsigned', 32), 'unsigned int'), (('signed', 16), 'short'), (('signed', 32), 'int')])
+    known_types = dict([
+                (('unsigned', 64), 'not_implemented'), 
+                (('float', 32), 'float'), 
+                (('float', 64), 'double'), 
+                (('unsigned', 16), 'unsigned short'), 
+                (('unsigned', 32), 'unsigned int'), 
+                (('signed', 16), 'short'), 
+                (('signed', 32), 'int')
+                ])
 
     def __init__(self, ch, prefix=''):
         log('register_data.__init__:',4)
@@ -227,9 +235,11 @@ class register_data(cheb_data):
         if self.el.bit_encoding == None:
             self.el.bit_encoding = self.DEFAULT_BIT_ENC
             log('WARNING: bit_encoding not specified, by default: '+self.DEFAULT_BIT_ENC)
-  
+            
         try:
             ctype = self.known_types[(self.el.bit_encoding, self.el.element_width)]
+            self.ctype_not_implemented_msg = '//not implemented ctype for ' + self.name  + ': bit_encoding = ' + str(self.el.bit_encoding) + ', el_width = ' + str(self.el.element_width)
+              
         except KeyError:
             msg = 'Exception KeyError: unknown c-type: bit_encoding = ' + str(self.el.bit_encoding) + ', el_width = ' + str(self.el.element_width)
             raise RuntimeError, msg 
@@ -242,9 +252,15 @@ class register_data(cheb_data):
         self.ctype = ctype
         
     def gen_mmh(self):
-        return ['#define {0:30} (0x{1:0>8X})// {4}, {2:3}, {3}'.format(self.name, self.addr, self.mode, self.ctype, self.type)]
+        if self.ctype == 'not_implemented':
+            return [self.ctype_not_implemented_msg]
+        
+        return ['#define {0:50} (0x{1:0>8X})// {4}, {2:3}, {3}'.format(self.name, self.addr, self.mode, self.ctype, self.type)]
 
     def gen_vmeh(self):
+        if self.ctype == 'not_implemented':
+            return [self.ctype_not_implemented_msg]
+
         l = []
         #getter
         l.extend([
@@ -265,6 +281,9 @@ class register_data(cheb_data):
         return l
 
     def gen_vmec(self):
+        if self.ctype == 'not_implemented':
+            return [self.ctype_not_implemented_msg]
+
         # getter
         l = []
         l.extend([
@@ -354,7 +373,7 @@ class code_field(cheb_data):
                         
     def gen_mmh(self):
         # debug_output.append('cf = {0}'.format(self.el.__dict__))
-        return ['#define {0:30} {1} // {2}'.format(self.name, self.el.code, self.type)]
+        return ['#define {0:50} {1} // {2}'.format(self.name, self.el.code, self.type)]
 
     def gen_vmeh(self):
         return ['// Not implemented yet: no {0} getter'.format(self.type)]
@@ -424,7 +443,7 @@ class code_generator(object):
     info = Info()
     
     def _set_info(self, root):
-        self.info.GenaDSP = { 'name': 'GenaDSP', 'version': 'v2012-10-02', 'author = ': 'Andrey Pashnin <apashnin@cern.ch>, CERN BE-RF-CS' }
+        self.info.GenaDSP = { 'name': 'GenaDSP', 'version': 'v2012-10-19', 'author = ': 'Andrey Pashnin <apashnin@cern.ch>, CERN BE-RF-CS' }
         self.info.memmap_ver = root.map_version
         self.info.ts = datetime.datetime.now()
         self.info.user = getpass.getuser()
@@ -541,7 +560,11 @@ class code_generator(object):
                 new_prefix = prefix + ch.name + '_'
                 log('_parse_root: -------------> {0}... '.format(new_prefix))
                 if ch.type == 'area':
-                    log('_parse_root: no records for areas')
+                    log('_parse_root: no records for an area')
+                elif ch.type == 'submap':
+                    log('_parse_root: no records for a submap')
+                elif ch.type == 'memory-data':
+                    log('_parse_root: no records for a memory-data')
                 else:
                     for f in self.files:
                         log('## "{4}"({5}) "{3}{0}"({1}) -> "{2}"'.format(ch.name, ch.type, f.filename, prefix, root.name, root.type))
@@ -551,6 +574,10 @@ class code_generator(object):
             else:
                 if ch.type == 'area':
                     log('_parse_root: empty area found')
+                elif ch.type == 'submap':
+                    log('_parse_root: empty submap found')
+                elif ch.type == 'memory-data':
+                    log('_parse_root: NOT IMPLEMENTED YET: no records for a memory-data')
                 else:
                     log('_parse_root: ch = ({0},{1})'.format(ch.name, ch.type))
                     # log('_parse_root: ch.__dict__ = {0} '.format(ch.__dict__))
@@ -575,10 +602,6 @@ class dsp_header(object):
     DspWritableElements = ['rw', 'w']
     
     def __init__(self, root, fullpath):
-        print "hi"
-        print root
-        print dir(root)
-        print fullpath
         gen = code_generator(root, fullpath)
         #FIXME: Find a proper way to have these data available at reg-data.mmh, bfd.mmh,..
         dsp_header.data_size = root.data_size
@@ -591,3 +614,20 @@ class dsp_header(object):
 
 
 #EOF
+
+
+
+'''
+Versions:
+
+2013-01-22
+
+  adds: 'submap' added
+  
+  mods:  'not_implemented' added into the 'known-types' dictionary to handle unimplemented cases like: (unsigned, 64)
+
+
+
+
+'''
+ 
