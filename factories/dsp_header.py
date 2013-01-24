@@ -208,7 +208,34 @@ class cheb_data(object):
         #log('mode = ' + str(self.mode))
         return writable 
 
+class memory_data(cheb_data):
     
+    def __init__(self, ch, prefix=''):
+        log('memory_data.__init__:', 4)
+        log('ch: ' + str(ch.__dict__),5)
+        self.name = prefix+ch.name
+        self.type = ch.type
+        self.mode = ch.access_mode
+        log('dsp_base_addr = (0x{0:0>8X})'.format(dsp_header.dsp_base_addr))
+        self.addr = ch.address/(dsp_header.data_size/8) + dsp_header.dsp_base_addr
+        log('self.addr = (0x{0:0>8X})'.format(self.addr))
+        self.ctype = 'N/A'
+
+    def gen_vmeh(self):
+        l = ['//not_implemented: getter of a memory-data element',
+             '//not_implemented: setter of a memory-data element']
+        return l
+
+    def gen_vmec(self):
+        l = ['//not_implemented: getter of a memory-data element',
+             '//not_implemented: setter of a memory-data element']
+        return l
+
+    def gen_mmh(self):        
+        return ['#define {0:50} (0x{1:0>8X})// {4}, {2:3}, {3}'.format(self.name, self.addr, self.mode, self.ctype, self.type)]
+
+
+
 class register_data(cheb_data):
 
     DEFAULT_BIT_ENC = 'unsigned'
@@ -383,6 +410,18 @@ class code_field(cheb_data):
         return ['// Not implemented yet: no {0} getter'.format(self.type)]
         return ['// Not implemented yet: no {0} setter'.format(self.type)]
 
+@mm("memory-data", code_file_vmeh)
+def print_rec_to_file(rec, file, prefix, parent):
+    file.extend(memory_data(rec, prefix).gen_vmeh())
+
+@mm("memory-data", code_file_vmec)
+def print_rec_to_file(rec, file, prefix, parent):
+    file.extend(memory_data(rec, prefix).gen_vmec())
+
+@mm("memory-data", code_file_mmh)
+def print_rec_to_file(rec, file, prefix, parent):
+    file.extend(memory_data(rec, prefix).gen_mmh())
+
 @mm("register-data", code_file_vmeh)
 def print_rec_to_file(rec, file, prefix, parent):
     file.extend(register_data(rec, prefix).gen_vmeh())
@@ -447,7 +486,7 @@ class code_generator(object):
         self.info.memmap_ver = root.map_version
         self.info.ts = datetime.datetime.now()
         self.info.user = getpass.getuser()
-        self.info.dsp_ver = '0x' + self.info.ts.strftime("%y%m%d%M") + ' // format: 0xyymmddMM'
+        self.info.dsp_ver = '0x' + self.info.ts.strftime("%y%m%d%M") + ' // generation time, format: 0xyymmddMM'
 
     def _make_common_header(self):
         l = [
@@ -468,7 +507,7 @@ class code_generator(object):
         l.extend(h_common)
         l.extend([
                 '',
-                '#define DSP_VERSION {0}'.format(self.info.dsp_ver), 
+                '#define GENARATED_ON {0}'.format(self.info.dsp_ver), 
                 ''
                 ])
         return l
@@ -564,7 +603,7 @@ class code_generator(object):
                 elif ch.type == 'submap':
                     log('_parse_root: no records for a submap')
                 elif ch.type == 'memory-data':
-                    log('_parse_root: no records for a memory-data')
+                    log('_parse_root: no records for a memory-data, len(ch)>0')
                 else:
                     for f in self.files:
                         log('## "{4}"({5}) "{3}{0}"({1}) -> "{2}"'.format(ch.name, ch.type, f.filename, prefix, root.name, root.type))
@@ -576,8 +615,8 @@ class code_generator(object):
                     log('_parse_root: empty area found')
                 elif ch.type == 'submap':
                     log('_parse_root: empty submap found')
-                elif ch.type == 'memory-data':
-                    log('_parse_root: NOT IMPLEMENTED YET: no records for a memory-data')
+                #elif ch.type == 'memory-data':
+                #    log('_parse_root: NOT IMPLEMENTED YET: no records for a memory-data, len==0')
                 else:
                     log('_parse_root: ch = ({0},{1})'.format(ch.name, ch.type))
                     # log('_parse_root: ch.__dict__ = {0} '.format(ch.__dict__))
