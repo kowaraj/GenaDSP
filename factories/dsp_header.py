@@ -18,9 +18,10 @@ log.DBGLVL_RELEASE = 1
 log.DBGLVL_RC = 2 #same as RELEASE + 'src' in the log
 log.DBGLVL_DEBUG = 3
 log.DBGLVL_TALK = 5
-#log.dbglvl = log.DBGLVL_TALK
+
+log.dbglvl = log.DBGLVL_TALK
 #log.dbglvl = log.DBGLVL_DEBUG
-log.dbglvl = log.DBGLVL_RELEASE
+#log.dbglvl = log.DBGLVL_RELEASE
 
 log.fullpath = None
 log.file = None
@@ -216,10 +217,10 @@ class memory_data(cheb_data):
         self.name = prefix+ch.name
         self.type = ch.type
         self.mode = ch.access_mode
-        log('dsp_base_addr = (0x{0:0>8X})'.format(dsp_header.dsp_base_addr))
+        log('dsp_base_addr = (0x{0:0>8X})'.format(dsp_header.dsp_base_addr), 4)
         self.addr = ch.address/(dsp_header.data_size/8) + dsp_header.dsp_base_addr
-        log('self.addr = (0x{0:0>8X})'.format(self.addr))
-        self.ctype = 'N/A'
+        log('self.addr = (0x{0:0>8X})'.format(self.addr), 4)
+        self.ctype = 'unknown type'
 
     def gen_vmeh(self):
         l = ['//not_implemented: getter of a memory-data element',
@@ -252,10 +253,13 @@ class register_data(cheb_data):
     def __init__(self, ch, prefix=''):
         log('register_data.__init__:',4)
         log('ch: ' + str(ch.__dict__),5)
+        log('chs type = ' + type(ch), 5)
         self.el = ch
+        self.el
         self.name = prefix+ch.name
         self.type = ch.type
         self.mode = ch.access_mode
+        log('ch.address = (0x{0:0>8X})'.format(ch.address), 4)
         log('dsp_base_addr = (0x{0:0>8X})'.format(dsp_header.dsp_base_addr), 4)
         self.addr = ch.address/(dsp_header.data_size/8) + dsp_header.dsp_base_addr
         log('self.addr = (0x{0:0>8X})'.format(self.addr), 4)
