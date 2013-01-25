@@ -4,7 +4,7 @@ import datetime
 import getpass
 
 
-
+#test4w
 
 ### ---- log2file.py
 
@@ -249,13 +249,16 @@ class register_data(cheb_data):
                 (('signed', 16), 'short'), 
                 (('signed', 32), 'int')
                 ])
+    class reg_el(object):
+        pass
 
     def __init__(self, ch, prefix=''):
         log('register_data.__init__:',4)
         log('ch: ' + str(ch.__dict__),5)
-        log('chs type = ' + type(ch), 5)
         self.el = ch
-        self.el
+        #patched, because of: raise TypeError('As of PyCheb 2013-01-25 the tree is immutable!')
+        self.el_copy = register_data.reg_el
+        self.el_copy.bit_encoding = ch.bit_encoding
         self.name = prefix+ch.name
         self.type = ch.type
         self.mode = ch.access_mode
@@ -263,19 +266,19 @@ class register_data(cheb_data):
         log('dsp_base_addr = (0x{0:0>8X})'.format(dsp_header.dsp_base_addr), 4)
         self.addr = ch.address/(dsp_header.data_size/8) + dsp_header.dsp_base_addr
         log('self.addr = (0x{0:0>8X})'.format(self.addr), 4)
-        if self.el.bit_encoding == None:
-            self.el.bit_encoding = self.DEFAULT_BIT_ENC
+        if self.el_copy.bit_encoding == None:
+            self.el_copy.bit_encoding = self.DEFAULT_BIT_ENC
             log('WARNING: bit_encoding not specified, by default: '+self.DEFAULT_BIT_ENC)
             
         try:
-            ctype = self.known_types[(self.el.bit_encoding, self.el.element_width)]
-            self.ctype_not_implemented_msg = '//not implemented ctype for ' + self.name  + ': bit_encoding = ' + str(self.el.bit_encoding) + ', el_width = ' + str(self.el.element_width)
+            ctype = self.known_types[(self.el_copy.bit_encoding, self.el.element_width)]
+            self.ctype_not_implemented_msg = '//not implemented ctype for ' + self.name  + ': bit_encoding = ' + str(self.el_copy.bit_encoding) + ', el_width = ' + str(self.el.element_width)
               
         except KeyError:
-            msg = 'Exception KeyError: unknown c-type: bit_encoding = ' + str(self.el.bit_encoding) + ', el_width = ' + str(self.el.element_width)
+            msg = 'Exception KeyError: unknown c-type: bit_encoding = ' + str(self.el_copy.bit_encoding) + ', el_width = ' + str(self.el.element_width)
             raise RuntimeError, msg 
         except Exception:
-            msg = 'EXCEPTION: unknown, bit_encoding = ' + str(self.el.bit_encoding) + ', el_width = ' + str(self.el.element_width)
+            msg = 'EXCEPTION: unknown, bit_encoding = ' + str(self.el_copy.bit_encoding) + ', el_width = ' + str(self.el.element_width)
             log(msg)
             raise RuntimeError, 'Exception: unknown, register_data.__init__'
 
